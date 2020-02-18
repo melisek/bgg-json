@@ -42,7 +42,8 @@ namespace BoardGameGeekJsonApi.Controllers
                                Thumbnail = g.Thumbnail,
                                PlayDate = p.PlayDate,
                                NumPlays = p.NumPlays,
-                               Comments = p.Comments
+                               Comments = p.Comments,
+                               Players = p.Players
                            }).ToList();
             Cache.Default.Set(Cache.PlaysKey(username), response, DateTimeOffset.Now.AddSeconds(15));
 

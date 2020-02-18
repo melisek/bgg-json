@@ -188,6 +188,19 @@ namespace BoardGameGeekJsonApi
         public DateTime PlayDate { get; set; }
         public int NumPlays { get; set; }
         public string Comments { get; set; }
+        public IEnumerable<Player> Players { get; set; }
+    }
+
+    public class Player 
+    {
+        public string Username { get; set; }
+        public int UserId { get; set; }
+        public string Name { get; set; }
+        public string Color { get; set; }
+        public int Score { get; set; }
+        public bool New { get; set; }
+        public decimal Rating { get; set; }
+        public bool Win { get; set; }
     }
 
     public class Comment

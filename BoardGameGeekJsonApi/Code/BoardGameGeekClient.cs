@@ -210,7 +210,8 @@ namespace BoardGameGeekJsonApi
                                                            NumPlays = int.Parse(Boardgame.Attribute("quantity").Value),
                                                            GameId = int.Parse(Boardgame.Element("item").Attribute("objectid").Value),
                                                            PlayDate = safeParseDateTime(Boardgame.Attribute("date").Value),
-                                                           Comments = Boardgame.Element("comments") != null ? TrimmedStringOrNull(Boardgame.Element("comments").Value) : null
+                                                           Comments = Boardgame.Element("comments") != null ? TrimmedStringOrNull(Boardgame.Element("comments").Value) : null,
+                                                           Players = Boardgame.Element("players") != null ? LoadPlayers(Boardgame.Element("players")) : null
                                                        };
                 var plays = new Plays();
                 plays.Total = int.Parse(xDoc.Root.Attribute("total").Value);
@@ -249,27 +250,27 @@ namespace BoardGameGeekJsonApi
                                                           select new GameDetails
                                                           {
                                                               Name = (from p in Boardgame.Element("item").Elements("name") where p.Attribute("type").Value == "primary" select p.Attribute("value").Value).SingleOrDefault(),
-                                                              GameId = int.Parse(Boardgame.Element("item").Attribute("id").Value),
-                                                              Artists = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgameartist" select p.Attribute("value").Value).ToList(),
-                                                              AverageRating = decimal.Parse(Boardgame.Element("item").Element("statistics").Element("ratings").Element("average").Attribute("value").Value),
-                                                              BGGRating = decimal.Parse(Boardgame.Element("item").Element("statistics").Element("ratings").Element("bayesaverage").Attribute("value").Value),
-                                                              //Comments = LoadComments(Boardgame.Element("item").Element("comments")),
-                                                              Description = Boardgame.Element("item").Element("description").Value,
-                                                              Designers = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgamedesigner" select p.Attribute("value").Value).ToList(),
-                                                              Expands = SetExpandsLinks(Boardgame),
-                                                              Expansions = SetExpansionsLinks(Boardgame),
-                                                              Mechanics = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgamemechanic" select p.Attribute("value").Value).ToList(),
-                                                              Image = Boardgame.Element("item").Element("image") != null ? Boardgame.Element("item").Element("image").Value : string.Empty,
-                                                              IsExpansion = SetIsExpansion(Boardgame),
-                                                              Thumbnail = Boardgame.Element("item").Element("thumbnail") != null ? Boardgame.Element("item").Element("thumbnail").Value : string.Empty,
-                                                              MaxPlayers = int.Parse(Boardgame.Element("item").Element("maxplayers").Attribute("value").Value),
-                                                              MinPlayers = int.Parse(Boardgame.Element("item").Element("minplayers").Attribute("value").Value),
-                                                              PlayerPollResults = LoadPlayerPollResults(Boardgame.Element("item").Element("poll")),
-                                                              PlayingTime = int.Parse(Boardgame.Element("item").Element("playingtime").Attribute("value").Value),
-                                                              Publishers = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgamepublisher" select p.Attribute("value").Value).ToList(),
-                                                              Rank = GetRanking(Boardgame.Element("item").Element("statistics").Element("ratings").Element("ranks")),
-                                                              //TotalComments = int.Parse(Boardgame.Element("item").Element("comments").Attribute("totalitems").Value),
-                                                              YearPublished = int.Parse(Boardgame.Element("item").Element("yearpublished").Attribute("value").Value)
+                                                              GameId = int.TryParse(Boardgame.Element("item").Attribute("id").Value, out int gameId) ? gameId : 0,
+                                                              //Artists = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgameartist" select p.Attribute("value").Value).ToList(),
+                                                              //AverageRating = decimal.Parse(Boardgame.Element("item").Element("statistics").Element("ratings").Element("average").Attribute("value").Value),
+                                                              //BGGRating = decimal.TryParse(Boardgame.Element("item").Element("statistics").Element("ratings").Element("bayesaverage").Attribute("value").Value, out decimal bggRating) ? bggRating : 0,
+                                                              ////Comments = LoadComments(Boardgame.Element("item").Element("comments")),
+                                                              //Description = Boardgame.Element("item").Element("description").Value,
+                                                              //Designers = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgamedesigner" select p.Attribute("value").Value).ToList(),
+                                                              //Expands = SetExpandsLinks(Boardgame),
+                                                              //Expansions = SetExpansionsLinks(Boardgame),
+                                                              //Mechanics = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgamemechanic" select p.Attribute("value").Value).ToList(),
+                                                              //Image = Boardgame.Element("item").Element("image") != null ? Boardgame.Element("item").Element("image").Value : string.Empty,
+                                                              //IsExpansion = SetIsExpansion(Boardgame),
+                                                              //Thumbnail = Boardgame.Element("item").Element("thumbnail") != null ? Boardgame.Element("item").Element("thumbnail").Value : string.Empty,
+                                                              //MaxPlayers = int.TryParse(Boardgame.Element("item").Element("maxplayers").Attribute("value").Value, out int maxPlayers) ? maxPlayers : 0,
+                                                              //MinPlayers = int.TryParse(Boardgame.Element("item").Element("minplayers").Attribute("value").Value, out int minPlayers) ? minPlayers : 0,
+                                                              //PlayerPollResults = LoadPlayerPollResults(Boardgame.Element("item").Element("poll")),
+                                                              //PlayingTime = int.TryParse(Boardgame.Element("item").Element("playingtime").Attribute("value").Value, out int playingTime) ? playingTime : 0,
+                                                              //Publishers = (from p in Boardgame.Element("item").Elements("link") where p.Attribute("type").Value == "boardgamepublisher" select p.Attribute("value").Value).ToList(),
+                                                              //Rank = GetRanking(Boardgame.Element("item").Element("statistics").Element("ratings").Element("ranks")),
+                                                              ////TotalComments = int.Parse(Boardgame.Element("item").Element("comments").Attribute("totalitems").Value),
+                                                              //YearPublished = int.TryParse(Boardgame.Element("item").Element("yearpublished").Attribute("value").Value, out int yearPublished) ? yearPublished : 0
                                                           };
 
                 details = gameCollection.FirstOrDefault();
@@ -532,6 +533,7 @@ namespace BoardGameGeekJsonApi
             List<Comment> comments = new List<Comment>();
 
             if (commentsElement != null)
+            {
                 foreach (XElement commentElement in commentsElement.Elements("comment"))
                 {
                     Comment c = new Comment()
@@ -546,7 +548,45 @@ namespace BoardGameGeekJsonApi
 
                     comments.Add(c);
                 }
+            }
             return comments;
+        }
+
+        private List<Player> LoadPlayers(XElement playersElement)
+        {
+            try
+            {
+
+
+                List<Player> players = new List<Player>();
+
+                if (playersElement != null)
+                {
+                    foreach (XElement playerElement in playersElement.Elements("player"))
+                    {
+                        var player = new Player()
+                        {
+                            UserId = int.TryParse(playerElement.Attribute("userid").Value, out int userId) ? userId : default(int),
+                            Username = playerElement.Attribute("username").Value,
+                            Name = playerElement.Attribute("name").Value,
+                            Color = playerElement.Attribute("color").Value,
+                            Score = int.TryParse(playerElement.Attribute("score").Value, out int score) ? score : default(int),
+                            New = int.TryParse(playerElement.Attribute("new").Value, out int newPlayer) ? newPlayer == 1 : false,
+                            Win = int.TryParse(playerElement.Attribute("win").Value, out int playerWin) ? playerWin == 1 : false
+                        };
+
+                        decimal.TryParse(playerElement.Attribute("rating").Value, out decimal rating);
+                        player.Rating = rating;
+
+                        players.Add(player);
+                    }
+                }
+                return players;
+            }
+            catch(Exception ex)
+            {
+                throw;
+            }
         }
 
         private async Task<XDocument> ReadData(Uri requestUrl)
