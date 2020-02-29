@@ -186,7 +186,7 @@ namespace BoardGameGeekJsonApi
             }
         }
 
-        public async Task<Plays> LoadPlays(string username, int page = 1, DateTime? minDate = null, DateTime? maxDate = null)
+        public async Task<Plays> LoadPlays(string username, int page = 1, DateTime? minDate = null, DateTime? maxDate = null, int? gameId = null)
         {
             try
             {
@@ -203,19 +203,77 @@ namespace BoardGameGeekJsonApi
                 XDocument xDoc = await ReadData(teamDataURI);
 
                 // LINQ to XML.
-                IEnumerable<PlayItem> gameCollection = from Boardgame in xDoc.Descendants("play")
-                                                       select new PlayItem
-                                                       {
-                                                           Name = Boardgame.Element("item").Attribute("name").Value,
-                                                           NumPlays = int.Parse(Boardgame.Attribute("quantity").Value),
-                                                           GameId = int.Parse(Boardgame.Element("item").Attribute("objectid").Value),
-                                                           PlayDate = safeParseDateTime(Boardgame.Attribute("date").Value),
-                                                           Comments = Boardgame.Element("comments") != null ? TrimmedStringOrNull(Boardgame.Element("comments").Value) : null,
-                                                           Players = Boardgame.Element("players") != null ? LoadPlayers(Boardgame.Element("players")) : null
-                                                       };
+                var playsQuery = xDoc.Descendants("play").AsQueryable();
+
+                if (gameId.HasValue)
+                {
+                    playsQuery = playsQuery.Where(p => int.Parse(p.Element("item").Attribute("objectid").Value) == gameId.Value);
+                }
+
+                var playsList = playsQuery.Select(p => 
+                    new PlayItem
+                    {
+                        Name = p.Element("item").Attribute("name").Value,
+                        NumPlays = int.Parse(p.Attribute("quantity").Value),
+                        GameId = int.Parse(p.Element("item").Attribute("objectid").Value),
+                        PlayDate = safeParseDateTime(p.Attribute("date").Value),
+                        Comments = p.Element("comments") != null ? TrimmedStringOrNull(p.Element("comments").Value) : null,
+                        Players = p.Element("players") != null ? LoadPlayers(p.Element("players")) : null
+                    });
+
                 var plays = new Plays();
                 plays.Total = int.Parse(xDoc.Root.Attribute("total").Value);
-                plays.Items = gameCollection;
+                plays.Items = playsList;
+                return plays;
+            }
+            catch (Exception ex)
+            {
+                throw;
+                //return new Plays();
+            }
+        }
+
+        public async Task<Plays> LoadMostPlayedGames(string username, int page = 1, DateTime? minDate = null, DateTime? maxDate = null)
+        {
+            try
+            {
+                string url = string.Format(BASE_URL2 + "/plays?username={0}&subtype=boardgame&excludesubtype=videogame&page={1}", username, page);
+                if (minDate != null)
+                {
+                    url += "&mindate=" + minDate.Value.ToString("yyyy-MM-dd");
+                }
+                if (maxDate != null)
+                {
+                    url += "&maxdate=" + maxDate.Value.ToString("yyyy-MM-dd");
+                }
+                Uri teamDataURI = new Uri(url);
+                XDocument xDoc = await ReadData(teamDataURI);
+
+                // LINQ to XML.
+                var playsQuery = xDoc.Descendants("play")
+                    .Select(p =>
+                        new PlayItem
+                        {
+                            Name = p.Element("item").Attribute("name").Value,
+                            NumPlays = int.Parse(p.Attribute("quantity").Value),
+                            GameId = int.Parse(p.Element("item").Attribute("objectid").Value),
+                            PlayDate = safeParseDateTime(p.Attribute("date").Value),
+                            Comments = p.Element("comments") != null ? TrimmedStringOrNull(p.Element("comments").Value) : null,
+                            Players = p.Element("players") != null ? LoadPlayers(p.Element("players")) : null
+                        })
+                    .GroupBy(p => p.GameId)
+                    .OrderByDescending(g => g.Count())
+                    .Select(g => new PlayItem
+                    {
+                        GameId = g.Key,
+                        Name = g.First().Name,
+                        NumPlays = g.Count(),
+                        PlayDate = g.First().PlayDate
+                    });
+
+                var plays = new Plays();
+                plays.Total = int.Parse(xDoc.Root.Attribute("total").Value);
+                plays.Items = playsQuery;
                 return plays;
             }
             catch (Exception ex)

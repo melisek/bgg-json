@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Caching;
+using System.Text;
 using System.Web;
 
 namespace BoardGameGeekJsonApi
@@ -20,9 +21,30 @@ namespace BoardGameGeekJsonApi
             return "thing:" + id.ToString();
         }
 
-        public static string PlaysKey(string username)
+        public static string PlaysKey(string username, int? gameId = null, DateTime? from = null, DateTime? to = null)
         {
-            return "plays:" + username;
+            StringBuilder sb = new StringBuilder("plays:");
+            sb.Append(username);
+
+            if (gameId.HasValue)
+            {
+                sb.Append(';');
+                sb.Append(gameId.Value);
+            }
+
+            if (from.HasValue)
+            {
+                sb.Append(';');
+                sb.Append(from.Value.Date.ToString("yyyy-MM-dd"));
+            }
+
+            if (to.HasValue)
+            {
+                sb.Append(';');
+                sb.Append(to.Value.Date.ToString("yyyy-MM-dd"));
+            }
+
+            return sb.ToString();
         }
 
         public static string LongThingKey(int id)
