@@ -90,6 +90,7 @@ namespace BoardGameGeekJsonApi
                                                         select new CollectionItem
                                                         {
                                                             Name = GetStringValue(colItem.Element("name")),
+                                                            OriginalName = GetStringValue(colItem.Element("originalname")),
                                                             GameId = GetIntValue(colItem, "objectid"),
                                                             AverageRating = GetDecimalValue(colItem.Element("stats").Element("rating").Element("average"), "value", -1),
                                                             ForTrade = GetBoolValue(colItem.Element("status"), "fortrade"),
@@ -100,6 +101,8 @@ namespace BoardGameGeekJsonApi
                                                             NumPlays = GetIntValue(colItem.Element("numplays")),
                                                             Owned = GetBoolValue(colItem.Element("status"), "own"),
                                                             PlayingTime = GetIntValue(colItem.Element("stats"), "playingtime"),
+                                                            MinPlayTime = GetIntValue(colItem.Element("stats"), "minplaytime"),
+                                                            MaxPlayTime = GetIntValue(colItem.Element("stats"), "maxplaytime"),
                                                             PreOrdered = GetBoolValue(colItem.Element("status"), "preordered"),
                                                             PreviousOwned = GetBoolValue(colItem.Element("status"), "prevowned"),
                                                             Rank = GetRanking(colItem.Element("stats").Element("rating").Element("ranks")),
@@ -249,6 +252,8 @@ namespace BoardGameGeekJsonApi
                 Uri teamDataURI = new Uri(url);
                 XDocument xDoc = await ReadData(teamDataURI);
 
+                var gameCollection = await LoadGamesFromCollection(username, false);
+
                 // LINQ to XML.
                 var playsQuery = xDoc.Descendants("play")
                     .Select(p =>
@@ -266,7 +271,7 @@ namespace BoardGameGeekJsonApi
                     .Select(g => new PlayItem
                     {
                         GameId = g.Key,
-                        Name = g.First().Name,
+                        Name = gameCollection.FirstOrDefault(ci => ci.GameId == g.Key)?.Name ?? g.First().Name,
                         NumPlays = g.Count(),
                         PlayDate = g.First().PlayDate
                     });
